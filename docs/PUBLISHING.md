@@ -11,11 +11,16 @@
 
 ## First Thunderstore publication
 
-1. Sign in at <https://thunderstore.io> using Discord.
-2. Create or choose a team/namespace that Jim controls.
-3. Open the Valheim community's package upload page.
-4. Upload the generated ZIP and verify the dependency and README preview.
-5. Publish only after the Kujamaton client/server portal test succeeds.
+1. Sign in at <https://thunderstore.io> using GitHub.
+2. Publish under the `jcruse03` team/namespace.
+3. Create a team service account and supply its token through `TCLI_AUTH_TOKEN`;
+   never commit or print the token.
+4. Run `mise run check` and publish the generated ZIP with Thunderstore's official
+   `tcli` using the settings in `thunderstore.toml`.
+5. Verify the live package metadata, dependency, README, and downloadable archive.
+
+The initial package passed direct login and two-way Kujamaton/Everville portal
+traversal before publication.
 
 Keep the title, description, and first README paragraph explicit that this is a community
 continuation/fork of lunar91's original GPL-3.0 project. Do not imply endorsement by lunar91.
