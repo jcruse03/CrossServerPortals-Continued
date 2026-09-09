@@ -58,7 +58,7 @@ public static class ModifyPortalColors
     // Returns true if the portal is listed as modified in the modifiedPortals list
     private static bool IsModified(TeleportWorld portal)
     {
-        if (portal == null || modifiedPortals == null || modifiedPortals.Count == 0) return false;
+        if (portal == null || modifiedPortals.Count == 0) return false;
         for (int i = 0; i < modifiedPortals.Count; i++)
             if (ReferenceEquals(modifiedPortals[i], portal) || modifiedPortals[i] == portal)
                 return true;
@@ -72,7 +72,6 @@ public static class ModifyPortalColors
         
         
         if (portal == null) return;
-        if (modifiedPortals == null) modifiedPortals = new List<TeleportWorld>();
         if (IsModified(portal)) return;
         modifiedPortals.Add(portal);
     }
@@ -81,14 +80,13 @@ public static class ModifyPortalColors
     private static void SetNotModified(TeleportWorld portal)
     {
             
-        if (portal == null || modifiedPortals == null || modifiedPortals.Count == 0) return;
+        if (portal == null || modifiedPortals.Count == 0) return;
         // Remove by reference first, fall back to Equals
         for (int i = 0; i < modifiedPortals.Count; i++)
         {
             if (ReferenceEquals(modifiedPortals[i], portal) || modifiedPortals[i] == portal)
             {
                 modifiedPortals.RemoveAt(i);
-                if (modifiedPortals.Count == 0) modifiedPortals = null;
                 return;
             }
         }
@@ -157,7 +155,8 @@ public static class ModifyPortalColors
                     // The Flames particle system color.
                     var blueFlames = particleSystem.transform.Find("blue flames").GetComponent<ParticleSystem>();
                     var defBlueFlames = defParticleSystem.transform.Find("blue flames").GetComponent<ParticleSystem>();
-                    blueFlames.startColor = defBlueFlames.startColor;
+                    var blueFlamesMain = blueFlames.main;
+                    blueFlamesMain.startColor = defBlueFlames.main.startColor;
                     blueFlames.customData.SetColor(ParticleSystemCustomData.Custom1, defBlueFlames.customData.GetColor(ParticleSystemCustomData.Custom1));
                     blueFlames.customData.SetColor(ParticleSystemCustomData.Custom2, defBlueFlames.customData.GetColor(ParticleSystemCustomData.Custom2));
                     
@@ -165,12 +164,14 @@ public static class ModifyPortalColors
                     // The black portal sucking particle system
                     var blackSuck = particleSystem.transform.Find("Black_suck").GetComponent<ParticleSystem>();
                     var defBlackSuck = defParticleSystem.transform.Find("Black_suck").GetComponent<ParticleSystem>();
-                    blackSuck.startColor = defBlackSuck.startColor;
+                    var blackSuckMain = blackSuck.main;
+                    blackSuckMain.startColor = defBlackSuck.main.startColor;
                     
                     // The Sucking Particles
                     var suckParticles = particleSystem.transform.Find("suck particles").GetComponent<ParticleSystem>();
                     var defSuckParticles = defParticleSystem.transform.Find("suck particles").GetComponent<ParticleSystem>();
-                    suckParticles.startColor = defSuckParticles.startColor;
+                    var suckParticlesMain = suckParticles.main;
+                    suckParticlesMain.startColor = defSuckParticles.main.startColor;
 
                     // The light color
                     var pointLight = target_found_red.transform.Find("Point light").GetComponent<Light>();
@@ -198,11 +199,12 @@ public static class ModifyPortalColors
         SetModified(portal);
         var particle_system = target_found_red.transform.Find("Particle System");
 
-        var blue_flames = particle_system.transform.Find("blue flames").GetComponent<ParticleSystem>();
-        var black_suck = particle_system.transform.Find("Black_suck").GetComponent<ParticleSystem>();
-        var suck_particles = particle_system.transform.Find("suck particles").GetComponent<ParticleSystem>();
+        if (!particle_system) return;
 
-        var point_light = target_found_red.transform.Find("Point light").GetComponent<Light>();
+        var blue_flames = particle_system.transform.Find("blue flames")?.GetComponent<ParticleSystem>();
+        var black_suck = particle_system.transform.Find("Black_suck")?.GetComponent<ParticleSystem>();
+        var suck_particles = particle_system.transform.Find("suck particles")?.GetComponent<ParticleSystem>();
+        var point_light = target_found_red.transform.Find("Point light")?.GetComponent<Light>();
 
         if (CSPConfig.recolorPortalGlyphs.Value)
         {
@@ -218,20 +220,32 @@ public static class ModifyPortalColors
 
         if (CSPConfig.recolorPortalEffects.Value)
         {
-            blue_flames.startColor = CSPConfig.customPortalEffectColor.Value;
-            blue_flames.customData.SetColor(ParticleSystemCustomData.Custom1, CSPConfig.customPortalEffectColor.Value);
-            blue_flames.customData.SetColor(ParticleSystemCustomData.Custom2, CSPConfig.customPortalEffectColor.Value);
+            if (blue_flames != null)
+            {
+                var blueFlamesMain = blue_flames.main;
+                blueFlamesMain.startColor = CSPConfig.customPortalEffectColor.Value;
+                blue_flames.customData.SetColor(ParticleSystemCustomData.Custom1, CSPConfig.customPortalEffectColor.Value);
+                blue_flames.customData.SetColor(ParticleSystemCustomData.Custom2, CSPConfig.customPortalEffectColor.Value);
+            }
             Color customColorWithAlpha = CSPConfig.customPortalEffectColor.Value;
             customColorWithAlpha = customColorWithAlpha * 0.1f;
             customColorWithAlpha.a = 0.1f;
-            black_suck.startColor = customColorWithAlpha;
-            suck_particles.startColor = CSPConfig.customPortalEffectColor.Value;
-            point_light.color = CSPConfig.customPortalEffectColor.Value;
+            if (black_suck != null)
+            {
+                var blackSuckMain = black_suck.main;
+                blackSuckMain.startColor = customColorWithAlpha;
+            }
+            if (suck_particles != null)
+            {
+                var suckParticlesMain = suck_particles.main;
+                suckParticlesMain.startColor = CSPConfig.customPortalEffectColor.Value;
+            }
+            if (point_light != null) point_light.color = CSPConfig.customPortalEffectColor.Value;
         }
     }
     
     // Finds any UnityEngine.Object by name, including disabled/prefabs/assets (editor + runtime for loaded assets)
-    private static T FindAnyObjectByName<T>(string name) where T : Object
+    private static T? FindAnyObjectByName<T>(string name) where T : UnityEngine.Object
     {
         foreach (var obj in Resources.FindObjectsOfTypeAll<T>())
             if (obj != null && obj.name == name)
@@ -255,16 +269,19 @@ public static class ModifyPortalColors
     // portal_wood
     // portal_stone
     // portal
-    private static TeleportWorld GetDefaultPortal(TeleportWorld portal)
+    private static TeleportWorld? GetDefaultPortal(TeleportWorld portal)
     {
-        TeleportWorld defaultPortal;
+        TeleportWorld? defaultPortal;
         // Portal type as string of the base object name.
         var baseName = GetPortalBaseName(portal);
         // Try to get the value 
         if (!defaultPortals.TryGetValue(baseName, out defaultPortal))
         {
             defaultPortal = FindAnyObjectByName<TeleportWorld>(baseName);
-            defaultPortals.Add(baseName, defaultPortal);
+            if (defaultPortal != null)
+            {
+                defaultPortals[baseName] = defaultPortal;
+            }
         }
 
         return defaultPortal;

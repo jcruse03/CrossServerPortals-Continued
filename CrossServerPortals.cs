@@ -5,14 +5,14 @@ using HarmonyLib;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Lunarbin.Valheim.CrossServerPortals
 {
-    [BepInPlugin("lunarbin.games.valheim", "Valheim Cross Server Portals", BuildInfo.Version)]
+    [BepInPlugin("lunarbin.games.valheim", "Valheim Cross Server Portals Continued", BuildInfo.Version)]
     public class CrossServerPortals : BaseUnityPlugin
     {
+        private static CrossServerPortals instance = null!;
         private static TeleportInfo? teleportInfo;
         private static bool teleportingToServer;
         private static bool hasJoinedServer;
@@ -27,6 +27,7 @@ namespace Lunarbin.Valheim.CrossServerPortals
 
         private void Awake()
         {
+            instance = this;
             _harmony.PatchAll();
             CSPConfig.Init(Config);
             Config.SettingChanged += OnConfigChanged;
@@ -95,7 +96,7 @@ namespace Lunarbin.Valheim.CrossServerPortals
 
         // TeleportToServer simply logs the player out.
         // The connection will be handled on the main menu.
-        public static async void TeleportToServer(string tag, TeleportWorld instance)
+        public static void TeleportToServer(string tag, TeleportWorld portal)
         {
             teleportInfo = TeleportInfo.ParsePortalTag(tag);
             if (teleportInfo != null)
@@ -107,18 +108,21 @@ namespace Lunarbin.Valheim.CrossServerPortals
                 teleportingToServer = true;
                 hasJoinedServer = false;
                 Player.m_localPlayer.Message(MessageHud.MessageType.Center, $"Teleporting to {tag}");
-                
-                await Task.Delay(1000);
-                MovePlayerToPortalExit(ref Player.m_localPlayer, ref instance);
-                Game.instance.Logout();
+                instance.StartCoroutine(LogoutThroughPortal(portal));
                 return;
             }
 
             Player.m_localPlayer.Message(MessageHud.MessageType.Center, $"Invalid portal tag: {tag}");
         }
 
-        private static void Logout()
+        private static IEnumerator LogoutThroughPortal(TeleportWorld portal)
         {
+            yield return new WaitForSecondsRealtime(1f);
+            if (Player.m_localPlayer != null && portal != null)
+            {
+                Player player = Player.m_localPlayer;
+                MovePlayerToPortalExit(ref player, ref portal);
+            }
             Game.instance.Logout();
         }
 
@@ -239,9 +243,10 @@ namespace Lunarbin.Valheim.CrossServerPortals
             {
                 if (teleportInfo != null && teleportingToServer && !hasJoinedServer)
                 {
-                    if (teleportInfo?.Type == TeleportInfo.PortalType.World)
+                    TeleportInfo destination = teleportInfo.Value;
+                    if (destination.Type == TeleportInfo.PortalType.World)
                     {
-                        var world = teleportInfo?.Address;
+                        string world = destination.Address;
                         if (world != "")
                         {
                             List<World> worlds = SaveSystem.GetWorldList();
@@ -267,8 +272,7 @@ namespace Lunarbin.Valheim.CrossServerPortals
                     {
                         //ServerJoinDataDedicated joinDataDedicated = new ServerJoinDataDedicated(ServerToJoin?.Address, (ushort)(ServerToJoin?.Port));
                         ServerJoinData joinData =
-                            new ServerJoinData(new ServerJoinDataDedicated(teleportInfo?.Address,
-                                (ushort)(teleportInfo?.Port)));
+                            new ServerJoinData(new ServerJoinDataDedicated(destination.Address, destination.Port));
 
                         FejdStartup.instance.SetServerToJoin(joinData);
                         FejdStartup.instance.JoinServer();
@@ -306,8 +310,8 @@ namespace Lunarbin.Valheim.CrossServerPortals
             {
                 if (teleportingToServer && teleportInfo != null && teleportInfo?.TargetTag != "")
                 {
-                    List<ZDO> zdos = ZDOMan.instance.GetPortals();
-                    Vector3 targetPos = new();
+                    List<ZDO> zdos = ZDOMan.instance.GetPortalList();
+                    Vector3? targetPos = null;
                     foreach (var portal in zdos)
                     {
                         if (portal == null) continue;
@@ -318,14 +322,14 @@ namespace Lunarbin.Valheim.CrossServerPortals
                             || TeleportInfo.ParsePortalTag(tag)?.SourceTag == teleportInfo?.TargetTag)
                         {
                             var position = portal.GetPosition();
-                            targetPos = position;
                             var rotation = portal.GetRotation();
                             var offsetDir = rotation * Vector3.forward;
                             spawnPoint = position + offsetDir * portalExitDistance + Vector3.up;
+                            targetPos = spawnPoint;
                             break;
                         }
                     }
-                    FinishCrossServerTeleport(2, targetPos);
+                    instance.StartCoroutine(FinishCrossServerTeleport(2f, targetPos));
                     return;
                 }
                 // Null the ServerToJoin since we only just connected.
@@ -335,13 +339,13 @@ namespace Lunarbin.Valheim.CrossServerPortals
             }
         }
 
-        public static async void FinishCrossServerTeleport(float seconds, Vector3 position = new Vector3())
+        private static IEnumerator FinishCrossServerTeleport(float seconds, Vector3? position)
         {
-            await Task.Delay((int)(seconds * 1000));
-            
-            if (position.x != 0 && position.y != 0 && position.z != 0)
+            yield return new WaitForSecondsRealtime(seconds);
+
+            if (position.HasValue && Player.m_localPlayer != null)
             {
-                Player.m_localPlayer.transform.position = position;
+                Player.m_localPlayer.transform.position = position.Value;
             }
 
             teleportingToServer = false;
@@ -361,14 +365,30 @@ namespace Lunarbin.Valheim.CrossServerPortals
             // Every 10 seconds, refresh the list of known portals.
             private static IEnumerator FetchPortals()
             {
+                while (ZNet.instance == null || ZDOMan.instance == null)
+                {
+                    yield return null;
+                }
+
+                // Portal force-sending is server bookkeeping; clients do not need this loop.
+                if (!ZNet.instance.IsServer()) yield break;
+
                 while (true)
                 {
-                    List<ZDO> portals = ZDOMan.instance.GetPortals();
+                    if (ZDOMan.instance == null || ZNet.instance == null || !ZNet.instance.IsServer())
+                    {
+                        yield break;
+                    }
+
+                    List<ZDO> portals = ZDOMan.instance.GetPortalList();
+                    HashSet<ZDOID> knownPortalIds = new HashSet<ZDOID>(knownPortals
+                        .Where(portal => portal != null)
+                        .Select(portal => portal.m_uid));
 
                     // Send the portals to the connected client.
-                    if (ZNet.instance.IsServer())
+                    foreach (ZDO zdo in portals)
                     {
-                        foreach (ZDO zdo in portals.Except(knownPortals))
+                        if (zdo != null && !knownPortalIds.Contains(zdo.m_uid))
                         {
                             ZDOMan.instance.ForceSendZDO(zdo.m_uid);
                         }

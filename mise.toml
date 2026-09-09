@@ -1,0 +1,21 @@
+[tools]
+dotnet = "10.0.302"
+
+[env]
+VALHEIM_GAME_PATH = "{{config_root}}/.game"
+
+[tasks.test]
+description = "Run parser unit tests"
+run = "dotnet test tests/CrossServerPortals.Tests.csproj --configuration Release"
+
+[tasks.build]
+description = "Build the merged release DLL against local Valheim assemblies"
+run = "dotnet build CrossServerPortals.csproj --configuration Release"
+
+[tasks.package]
+description = "Create the Thunderstore-ready archive"
+run = "dotnet msbuild CrossServerPortals.csproj -target:Package -property:Configuration=Release"
+
+[tasks.check]
+description = "Run tests and build the release package"
+depends = ["test", "package"]

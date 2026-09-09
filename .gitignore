@@ -33,6 +33,7 @@ bld/
 [Ll]og/
 [Ll]ogs/
 [Pp]ackaged/
+.game/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

@@ -6,22 +6,22 @@ namespace Lunarbin.Valheim.CrossServerPortals;
 
 public static class CSPConfig
 {
-    public static ConfigEntry<bool> preserveStatusEffects;
-    public static ConfigEntry<bool> recolorPortalGlyphs;
-    public static ConfigEntry<bool> recolorPortalEffects;
-    public static ConfigEntry<Color> customPortalGlyphColor;
-    public static ConfigEntry<Color> customPortalEffectColor;
-    public static ConfigEntry<bool> promptBeforeTeleport;
-    public static ConfigEntry<bool> requireAdminToRename;
-    public static ConfigFile Config;
-    private static ConfigEntry<bool> lockAdminConfig;
+    public static ConfigEntry<bool> preserveStatusEffects = null!;
+    public static ConfigEntry<bool> recolorPortalGlyphs = null!;
+    public static ConfigEntry<bool> recolorPortalEffects = null!;
+    public static ConfigEntry<Color> customPortalGlyphColor = null!;
+    public static ConfigEntry<Color> customPortalEffectColor = null!;
+    public static ConfigEntry<bool> promptBeforeTeleport = null!;
+    public static ConfigEntry<bool> requireAdminToRename = null!;
+    public static ConfigFile Config = null!;
+    private static ConfigEntry<bool> lockAdminConfig = null!;
 
     // Synchronize Server Config
-    private static ServerSync.ConfigSync configSync = new ServerSync.ConfigSync("lunarbin.games.valheim")
+    private static readonly ServerSync.ConfigSync configSync = new ServerSync.ConfigSync("lunarbin.games.valheim")
     {
         DisplayName = "Cross Server Portals",
         CurrentVersion = BuildInfo.Version,
-        MinimumRequiredVersion = "1.1.0"
+        MinimumRequiredVersion = BuildInfo.Version
     };
 
     public static void Init(ConfigFile config)
