@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1 - 2026-09-09
+
+- Replace the inherited package icon with an original two-world portal emblem.
+- No gameplay or configuration changes.
+
 ## 1.3.0 - 2026-09-09
 
 - Add Valheim 1.0 compatibility.

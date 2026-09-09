@@ -4,7 +4,7 @@ schemaVersion = "0.0.1"
 [package]
 namespace = "jcruse03"
 name = "Cross_Server_Portals_Continued"
-versionNumber = "1.3.0"
+versionNumber = "1.3.1"
 description = "Valheim 1.0 continuation of lunar91's Cross Server Portals. Link servers and local worlds through portals."
 websiteUrl = "https://github.com/jcruse03/CrossServerPortals-Continued"
 containsNsfwContent = false
