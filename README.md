@@ -7,6 +7,15 @@ Connect Valheim servers and local worlds through ordinary portals.
 > The original design and implementation belong to lunar91 and contributors. This fork is
 > distributed under the same GPL-3.0 license and is not an official lunar91 release.
 
+## Recommended companion: PortalPass
+
+For seamless travel between password-protected servers, pair this mod with
+[PortalPass on Thunderstore](https://thunderstore.io/c/valheim/p/jcruse03/PortalPass/)
+([source on GitHub](https://github.com/jcruse03/PortalPass)). PortalPass is an
+optional client-only companion that supplies passwords from a private file the
+player controls, so cross-server portal trips do not stop at a password prompt.
+It never records or learns passwords automatically.
+
 ## Compatibility
 
 - Valheim 1.0 / dedicated server network version 39

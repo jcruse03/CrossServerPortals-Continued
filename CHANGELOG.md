@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.2 - 2026-09-10
+
+- Recommend and link the optional PortalPass companion for seamless travel between
+  password-protected servers.
+- Documentation-only package update. The included plugin DLL is unchanged from the
+  tested 1.3.1 release; there are no gameplay or configuration changes.
+
 ## 1.3.1 - 2026-09-09
 
 - Replace the inherited package icon with an original two-world portal emblem.
